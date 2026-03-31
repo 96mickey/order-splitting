@@ -24,3 +24,12 @@ export interface JsonErrorBody {
   errors?: string[];
   stack?: string;
 }
+
+/** Architecture doc nested error shape when `machineCode` is set on APIError */
+export interface ArchitectureErrorEnvelope {
+  error: {
+    code: string;
+    message: string;
+    requestId: string;
+  };
+}

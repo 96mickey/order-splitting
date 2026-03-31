@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import { isCelebrateError } from 'celebrate';
 import APIError from '../utils/APIError';
+import type { ArchitectureErrorEnvelope } from '../../types/errors';
 import { getRequestLogger } from '../../config/logger';
 import { env } from '../../config/vars';
 import { extractCelebrateValidationItems, type JsonErrorBody, type ErrorWithStatus } from '../../types/errors';
@@ -35,6 +36,20 @@ const logError = (err: ErrorWithStatus, req: Request): void => {
 
 export const handler = (err: ErrorWithStatus, req: Request, res: Response, _next: NextFunction): void => {
   const status = Number.parseInt(String(err.status || DEFAULT_ERROR_STATUS), 10) || DEFAULT_ERROR_STATUS;
+  logError(err, req);
+
+  if (err instanceof APIError && err.machineCode) {
+    const body: ArchitectureErrorEnvelope = {
+      error: {
+        code: err.machineCode,
+        message: err.message || httpStatusLabel(status) || DEFAULT_ERROR_MESSAGE,
+        requestId: req.requestId,
+      },
+    };
+    res.status(status).json(body);
+    return;
+  }
+
   const response: JsonErrorBody = {
     code: status,
     message: err.message || httpStatusLabel(status) || DEFAULT_ERROR_MESSAGE,
@@ -43,7 +58,6 @@ export const handler = (err: ErrorWithStatus, req: Request, res: Response, _next
     response.errors = err.errors;
   }
   if (IS_DEVELOPMENT && err.stack) response.stack = err.stack;
-  logError(err, req);
   res.status(status).json(response);
 };
 
@@ -66,6 +80,14 @@ export const validationError = (err: unknown, req: Request, res: Response, next:
 export const converter = (err: unknown, _req: Request, _res: Response, next: NextFunction): void => {
   if (err instanceof APIError) {
     next(err);
+    return;
+  }
+  if (err instanceof RangeError) {
+    next(new APIError({
+      message: err.message,
+      status: httpStatus.BAD_REQUEST,
+      machineCode: 'INVALID_PRECISION',
+    }));
     return;
   }
   const e = err as ErrorWithStatus;
