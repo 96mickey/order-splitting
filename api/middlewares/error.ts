@@ -6,6 +6,7 @@ import type { ArchitectureErrorEnvelope } from '../../types/errors';
 import { getRequestLogger } from '../../config/logger';
 import { env } from '../../config/vars';
 import { extractCelebrateValidationItems, type JsonErrorBody, type ErrorWithStatus } from '../../types/errors';
+import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-splitter-error-codes';
 
 const DEFAULT_ERROR_STATUS = httpStatus.INTERNAL_SERVER_ERROR;
 const DEFAULT_ERROR_MESSAGE = 'Internal Server Error';
@@ -77,16 +78,32 @@ export const validationError = (err: unknown, req: Request, res: Response, next:
   next(apiError);
 };
 
+function isJsonBodyParseFailure(err: unknown): err is ErrorWithStatus & { type: string } {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as ErrorWithStatus & { type?: string };
+  return e.status === httpStatus.BAD_REQUEST && e.type === 'entity.parse.failed';
+}
+
 export const converter = (err: unknown, _req: Request, _res: Response, next: NextFunction): void => {
   if (err instanceof APIError) {
     next(err);
+    return;
+  }
+  if (isJsonBodyParseFailure(err)) {
+    next(
+      new APIError({
+        message: err.message || 'Malformed JSON body',
+        status: httpStatus.BAD_REQUEST,
+        machineCode: ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST,
+      }),
+    );
     return;
   }
   if (err instanceof RangeError) {
     next(new APIError({
       message: err.message,
       status: httpStatus.BAD_REQUEST,
-      machineCode: 'INVALID_PRECISION',
+      machineCode: ORDER_SPLITTER_ERROR_CODES.INVALID_PRECISION,
     }));
     return;
   }
