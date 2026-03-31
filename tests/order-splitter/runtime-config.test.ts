@@ -109,14 +109,16 @@ describe.sequential('order-splitter runtime-config', () => {
   });
 
   describe('HTTP PATCH /config', () => {
-    it('updates maxDecimalPlaces and returns new snapshot', async () => {
-      const res = await request(app)
+    it('acceptance: PATCH 7 then GET returns 7', async () => {
+      const patchRes = await request(app)
         .patch('/config')
         .send({ maxDecimalPlaces: 7 })
         .set('Content-Type', 'application/json');
-      expect(res.status).toBe(200);
-      expect(res.body.maxDecimalPlaces).toBe(7);
+      expect(patchRes.status).toBe(200);
+      expect(patchRes.body.maxDecimalPlaces).toBe(7);
+
       const getRes = await request(app).get('/config');
+      expect(getRes.status).toBe(200);
       expect(getRes.body.maxDecimalPlaces).toBe(7);
     });
 
@@ -157,18 +159,21 @@ describe.sequential('order-splitter runtime-config', () => {
       expect(res.status).toBe(400);
     });
 
-    it('rejects below range and above range', async () => {
+    it('acceptance: out-of-range returns INVALID_PRECISION envelope', async () => {
       const low = await request(app)
         .patch('/config')
         .send({ maxDecimalPlaces: -1 })
         .set('Content-Type', 'application/json');
       expect(low.status).toBe(400);
+      expect(low.body.error?.code).toBe('INVALID_PRECISION');
+      expect(low.body.error?.requestId).toEqual(expect.any(String));
 
       const high = await request(app)
         .patch('/config')
         .send({ maxDecimalPlaces: 11 })
         .set('Content-Type', 'application/json');
       expect(high.status).toBe(400);
+      expect(high.body.error?.code).toBe('INVALID_PRECISION');
     });
 
     it('rejects unknown body keys', async () => {
