@@ -4,11 +4,9 @@ import compress from 'compression';
 import methodOverride from 'method-override';
 import cors from 'cors';
 import helmet from 'helmet';
-import passport from 'passport';
 import routes from '../api/routes';
 import { requestContext } from '../api/middlewares/request-context';
 import { httpRequestLogger } from '../api/middlewares/http-log';
-import { jwt } from './passport';
 import { apiRateLimiter, globalRateLimiter } from './rate-limit';
 import { corsConfig, rateLimitConfig, serverConfig } from './vars';
 import * as error from '../api/middlewares/error';
@@ -35,9 +33,6 @@ if (rateLimitConfig.enabled && rateLimitConfig.scope === 'global') {
 if (rateLimitConfig.enabled && rateLimitConfig.scope === 'api') {
   app.use('/api', apiRateLimiter);
 }
-
-app.use(passport.initialize());
-passport.use('jwt', jwt);
 
 app.use(routes);
 

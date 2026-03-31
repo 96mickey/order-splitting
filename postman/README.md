@@ -1,21 +1,13 @@
-# Postman & cURL
+# Postman
 
-## Import into Postman
+The previous **Auth starter** collection is **removed** after stripping JWT/auth from this repo.
 
-1. **Import** → **File** → choose `Auth-Starter.postman_collection.json`.
-2. Expand the **`Auth Starter`** folder — every request from `curl-examples.md` is there. Each request’s **Docs** tab shows the matching cURL.
-3. Collection variables (already set):
-   - `base_url` — default `http://localhost:3010`
-   - `token` — filled automatically after **Register** / **Login** when Tests run (or paste manually).
-3. Start the API (`npm run dev`), ensure Postgres is running and migrations are applied.
+Add a new collection when **Order Splitter** endpoints exist (`POST /orders/split`, etc.).
 
-## Create the database (once)
+Quick checks without Postman:
 
 ```bash
-createdb auth_starter
-npm run migrate
+curl -s http://127.0.0.1:3010/healthz
+curl -s http://127.0.0.1:3010/readyz
+curl -s http://127.0.0.1:3010/api/v1/example/ping
 ```
-
-## Same requests as cURL
-
-See `curl-examples.sh` (executable list of curls) or `curl-examples.md` for copy-paste blocks.

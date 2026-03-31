@@ -1,9 +1,8 @@
 import express from 'express';
-import { protectedPing } from '../../controllers/example.controller';
-import { authorize } from '../../middlewares/auth';
+import { ping } from '../../controllers/example.controller';
 
 const router = express.Router();
 
-router.get('/protected/ping', ...authorize(), protectedPing);
+router.get('/ping', ping);
 
 export default router;

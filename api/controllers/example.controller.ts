@@ -1,15 +1,6 @@
-import { Request, Response, NextFunction } from 'express';
-import httpStatus from 'http-status';
-import APIError from '../utils/APIError';
+import type { Request, Response } from 'express';
 
-export const protectedPing = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    next(new APIError({ message: 'Unauthorized', status: httpStatus.UNAUTHORIZED }));
-    return;
-  }
-  res.json({
-    message: 'Authenticated route example',
-    userId: req.user.id,
-    email: req.user.email,
-  });
+/** Placeholder route until Order Splitter endpoints are added. */
+export const ping = (_req: Request, res: Response): void => {
+  res.json({ message: 'ok', service: 'order-splitter (skeleton)' });
 };

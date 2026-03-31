@@ -1,15 +1,11 @@
 import { port, env } from './config/vars';
-import * as sequelizeGlobal from './config/sequelize';
-import { closeDatabase, connectDatabase } from './db/models';
 import { connectRedis, disconnectRedis } from './config/redis';
 import { logger } from './config/logger';
 
 let shuttingDown = false;
 
 const initializeConnections = async (): Promise<void> => {
-  await connectDatabase();
   await connectRedis();
-  sequelizeGlobal.init();
 };
 
 export const startServer = async (): Promise<void> => {
@@ -25,7 +21,7 @@ export const startServer = async (): Promise<void> => {
     logger.info(`Received ${signal}. Shutting down gracefully...`);
     server.close(async () => {
       try {
-        await Promise.all([closeDatabase(), disconnectRedis()]);
+        await disconnectRedis();
         logger.info('Shutdown complete');
         process.exit(0);
       } catch (error) {
