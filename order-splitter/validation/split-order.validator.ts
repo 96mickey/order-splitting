@@ -3,6 +3,7 @@ import {
   ORDER_SPLITTER_ERROR_CODES,
   type OrderSplitterErrorCode,
 } from '../errors/order-splitter-error-codes';
+import { MAX_STOCKS_PER_ORDER } from '../constants';
 import { getConfigSnapshot } from '../runtime-config';
 import { exceedsAllowedDecimalPlaces } from './decimal-precision';
 
@@ -132,6 +133,13 @@ export function validateSplitOrderPayload(body: unknown): SplitOrderValidationRe
     return fail(
       ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST,
       'Field "stocks" must be an array',
+    );
+  }
+
+  if (stocks.length > MAX_STOCKS_PER_ORDER) {
+    return fail(
+      ORDER_SPLITTER_ERROR_CODES.PORTFOLIO_TOO_LARGE,
+      `Portfolio cannot exceed ${MAX_STOCKS_PER_ORDER} stocks (got ${stocks.length})`,
     );
   }
 

@@ -2,14 +2,23 @@ import type { Request, Response, NextFunction } from 'express';
 import httpStatus from 'http-status';
 import APIError from '../utils/APIError';
 import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-splitter-error-codes';
+import { getConfigSnapshot } from '../../order-splitter/runtime-config';
+import { splitOrder } from '../../order-splitter/split';
 
 /**
- * Stub handler: validation has already run; the split engine will plug in here.
+ * Runs the split engine after validation; response includes per-line breakdown and cash balance.
  */
-export function postSplitOrder(_req: Request, res: Response): void {
+export function postSplitOrder(req: Request, res: Response): void {
+  const order = req.validatedSplitOrder!;
+  const maxDecimalPlaces = getConfigSnapshot().maxDecimalPlaces;
+  const { lines, cashBalance } = splitOrder(order, maxDecimalPlaces);
   res.status(httpStatus.OK).json({
     status: 'accepted' as const,
     orderId: null,
+    totalAmount: order.totalAmount,
+    orderType: order.orderType,
+    lines,
+    cashBalance,
   });
 }
 
