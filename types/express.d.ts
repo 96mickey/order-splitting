@@ -1,4 +1,5 @@
 import type { Logger } from 'winston';
+import type { OrderRequest } from '../order-splitter/types/order.models';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -6,6 +7,8 @@ declare module 'express-serve-static-core' {
     requestId: string;
     /** Child logger for this request (set by `requestContext` middleware) */
     log: Logger;
+    /** Set by `validateSplitOrderBody` after successful validation */
+    validatedSplitOrder?: OrderRequest;
   }
 }
 
