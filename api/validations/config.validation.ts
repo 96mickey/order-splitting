@@ -7,6 +7,7 @@ export const patchConfigBody = {
       .integer()
       .min(0)
       .max(10)
+      .strict()
       .required(),
   }),
 };
