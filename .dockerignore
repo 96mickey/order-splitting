@@ -1,0 +1,141 @@
+# Dependencies (will be installed in Docker)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Package files (not needed in final image, only used in deps stage)
+!package.json
+!package-lock.json
+!yarn.lock
+
+# Git files (not needed in Docker image)
+.git/
+.gitignore
+.gitattributes
+
+# Environment files (handled via Docker secrets/mounts)
+!.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+pm2.log
+pm2-error.log
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Testing & Coverage
+coverage/
+.nyc_output/
+*.lcov
+test/
+tests/
+__tests__/
+*.test.js
+*.spec.js
+.jest/
+
+# Documentation
+docs/
+*.md
+
+# CI/CD files
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+Jenkinsfile
+
+# Cache & Temporary files
+.cache/
+.temp/
+.tmp/
+*.tmp
+.eslintcache
+.parcel-cache/
+.npm/
+.yarn/
+
+# Build artifacts (if any)
+dist/
+build/
+out/
+
+# PM2 files (if not needed in production)
+.pm2/
+ecosystem.config.js
+
+# Linting & Code Quality (not needed in production)
+.eslintrc*
+.eslintignore
+.prettierrc*
+.prettierignore
+
+# Database migration config (not needed in production)
+.sequelizerc
+db/migrations/*
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+*.backup
+
+# Secrets & Keys (should use Docker secrets instead)
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+secrets/
+*.secret
+!service-account-key*.json
+!google-service-account*.json
+
+# Docker files (don't copy Docker files into Docker image)
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+.docker/
+
+# AWS & Cloud
+.aws-sam/
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# Misc
+*.pid
+*.seed
+*.pid.lock
+pids/
+report.*.json
+.node_repl_history
+*.tgz
+
+# Project specific exclusions
+# Add any project-specific files/directories here
