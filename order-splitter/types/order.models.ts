@@ -31,8 +31,8 @@ export interface OrderRequest {
 }
 
 /**
- * Successful split outcome (stub until the split engine is implemented).
- * Extend this type when returning allocations and ids from the engine.
+ * Successful split outcome from `POST /orders/split` (engine + metadata).
+ * Prefer importing `SplitLineBreakdown` / `SplitOrderEngineResult` from `order-splitter/split` for engine fields.
  */
 export interface OrderResponse {
   status: 'accepted';
