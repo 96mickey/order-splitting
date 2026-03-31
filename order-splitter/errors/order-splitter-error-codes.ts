@@ -13,12 +13,14 @@ export const ORDER_SPLITTER_ERROR_CODES = {
   INVALID_PRECISION: 'INVALID_PRECISION',
   ORDER_NOT_FOUND: 'ORDER_NOT_FOUND',
   MALFORMED_REQUEST: 'MALFORMED_REQUEST',
+  /** `stocks.length` exceeds `MAX_STOCKS_PER_ORDER` in `order-splitter/constants.ts`. */
+  PORTFOLIO_TOO_LARGE: 'PORTFOLIO_TOO_LARGE',
 } as const;
 
 export type OrderSplitterErrorCode =
   (typeof ORDER_SPLITTER_ERROR_CODES)[keyof typeof ORDER_SPLITTER_ERROR_CODES];
 
-/** All nine codes — useful for exhaustive tests and tooling. */
+/** All catalog codes — useful for exhaustive tests and tooling. */
 export const ALL_ORDER_SPLITTER_ERROR_CODES: readonly OrderSplitterErrorCode[] = [
   ORDER_SPLITTER_ERROR_CODES.INVALID_WEIGHTS,
   ORDER_SPLITTER_ERROR_CODES.EMPTY_PORTFOLIO,
@@ -29,4 +31,5 @@ export const ALL_ORDER_SPLITTER_ERROR_CODES: readonly OrderSplitterErrorCode[] =
   ORDER_SPLITTER_ERROR_CODES.INVALID_PRECISION,
   ORDER_SPLITTER_ERROR_CODES.ORDER_NOT_FOUND,
   ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST,
+  ORDER_SPLITTER_ERROR_CODES.PORTFOLIO_TOO_LARGE,
 ];

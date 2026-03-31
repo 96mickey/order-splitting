@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../../config/express';
+import { MAX_STOCKS_PER_ORDER } from '../../order-splitter/constants';
 import {
   ALL_ORDER_SPLITTER_ERROR_CODES,
   ORDER_SPLITTER_ERROR_CODES,
@@ -28,9 +29,9 @@ describe.sequential('split order validation layer', () => {
     setMaxDecimalPlaces(DEFAULT_DECIMALS);
   });
 
-  it('registers exactly nine architecture error codes', () => {
-    expect(ALL_ORDER_SPLITTER_ERROR_CODES).toHaveLength(9);
-    expect(new Set(ALL_ORDER_SPLITTER_ERROR_CODES).size).toBe(9);
+  it('registers every order-splitter error code uniquely', () => {
+    expect(ALL_ORDER_SPLITTER_ERROR_CODES).toHaveLength(10);
+    expect(new Set(ALL_ORDER_SPLITTER_ERROR_CODES).size).toBe(10);
   });
 
   describe('validateSplitOrderPayload (unit)', () => {
@@ -66,6 +67,37 @@ describe.sequential('split order validation layer', () => {
       if (!result.ok) {
         expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_WEIGHTS);
       }
+    });
+
+    it('PORTFOLIO_TOO_LARGE when stocks.length exceeds MAX_STOCKS_PER_ORDER', () => {
+      const stocks = [
+        ...Array.from({ length: MAX_STOCKS_PER_ORDER }, () => ({ weight: 0 })),
+        { weight: 100 },
+      ];
+      expect(stocks.length).toBe(MAX_STOCKS_PER_ORDER + 1);
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks,
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.PORTFOLIO_TOO_LARGE);
+      }
+    });
+
+    it('accepts portfolio at exactly MAX_STOCKS_PER_ORDER lines', () => {
+      const stocks = [
+        ...Array.from({ length: MAX_STOCKS_PER_ORDER - 1 }, () => ({ weight: 0 })),
+        { weight: 100 },
+      ];
+      expect(stocks.length).toBe(MAX_STOCKS_PER_ORDER);
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks,
+      });
+      expect(result.ok).toBe(true);
     });
 
     it('EMPTY_PORTFOLIO when stocks array is empty', () => {
@@ -197,6 +229,19 @@ describe.sequential('split order validation layer', () => {
       expect(res.body.error.requestId).toMatch(
         /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
       );
+    });
+
+    it('returns 400 PORTFOLIO_TOO_LARGE when stocks exceed cap', async () => {
+      const stocks = [
+        ...Array.from({ length: MAX_STOCKS_PER_ORDER }, () => ({ weight: 0 })),
+        { weight: 100 },
+      ];
+      const res = await request(app)
+        .post('/orders/split')
+        .send({ totalAmount: 1, orderType: 'BUY', stocks });
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.PORTFOLIO_TOO_LARGE);
+      expect(res.body.error.requestId).toBeDefined();
     });
 
     it('returns 400 EMPTY_PORTFOLIO for empty stocks', async () => {
