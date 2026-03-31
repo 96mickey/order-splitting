@@ -176,7 +176,15 @@ describe.sequential('split order validation layer', () => {
     it('returns 200 and no error for a valid split payload', async () => {
       const res = await request(app).post('/orders/split').send(validBody());
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({ status: 'accepted', orderId: null });
+      expect(res.body).toMatchObject({
+        status: 'accepted',
+        orderId: null,
+        totalAmount: 10_000,
+        orderType: 'BUY',
+        cashBalance: expect.any(Number) as number,
+      });
+      expect(Array.isArray(res.body.lines)).toBe(true);
+      expect(res.body.lines.length).toBe(2);
     });
 
     it('returns 400 + INVALID_WEIGHTS with code, message, requestId', async () => {
