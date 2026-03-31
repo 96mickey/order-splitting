@@ -21,7 +21,6 @@ export interface HttpRequestLogFields {
   durationMs: number;
   ip: string | undefined;
   userAgent: string | undefined;
-  userId?: number;
   contentLength?: string;
   /** Present when `LOG_HTTP_BODY=true` and body is JSON-like */
   body?: unknown;

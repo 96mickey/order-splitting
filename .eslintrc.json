@@ -11,6 +11,20 @@
     "sourceType": "module"
   },
   "ignorePatterns": ["dist/**", "node_modules/**"],
+  "overrides": [
+    {
+      "files": ["tests/**/*.ts", "**/*.test.ts"],
+      "globals": {
+        "describe": "readonly",
+        "it": "readonly",
+        "expect": "readonly",
+        "beforeAll": "readonly",
+        "afterAll": "readonly",
+        "beforeEach": "readonly",
+        "afterEach": "readonly"
+      }
+    }
+  ],
   "rules": {
     "import/extensions": "off",
     "import/no-unresolved": "off",

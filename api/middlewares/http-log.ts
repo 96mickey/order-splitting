@@ -27,7 +27,6 @@ export function httpRequestLogger(req: Request, res: Response, next: NextFunctio
       durationMs,
       ip: req.ip,
       userAgent: req.get('user-agent') ?? undefined,
-      userId: req.user?.id,
       contentLength: res.get('content-length') ?? undefined,
     };
 

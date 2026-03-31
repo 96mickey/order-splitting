@@ -20,28 +20,6 @@ const asInt = (value: string | undefined, fallback: number): number => {
   return Number.isNaN(parsed) ? fallback : parsed;
 };
 
-export const dbConfig = {
-  database: process.env.DATABASE_NAME,
-  username: process.env.DATABASE_USERNAME,
-  password: process.env.DATABASE_PASSWORD ?? '',
-  host: process.env.DATABASE_HOST,
-  port: asInt(process.env.DATABASE_PORT, 5432),
-  dialect: (process.env.DATABASE_DIALECT || 'postgres') as 'postgres' | 'sqlite',
-  storage: process.env.DATABASE_STORAGE,
-  logging: asBool(process.env.SQL_LOGGING, false) ? console.log : false,
-};
-
-export const jwtConfig = {
-  algo: 'HS256' as const,
-  secret: process.env.JWT_SECRET || 'change-me',
-  expiryMinutes: asInt(process.env.JWT_EXPIRATION_MINUTES, 60),
-  issuer: process.env.JWT_ISSUER || 'auth-starter',
-  audience: process.env.JWT_AUDIENCE || 'auth-starter-clients',
-};
-
-export const bcryptRounds = asInt(process.env.BCRYPT_ROUNDS, 10);
-export const defaultRoleName = process.env.DEFAULT_ROLE_NAME || 'user';
-
 const corsOrigin = process.env.CORS_ORIGIN || '*';
 
 export const serverConfig = {
@@ -68,7 +46,7 @@ export const redisConfig = {
   port: asInt(process.env.REDIS_PORT, 6379),
   password: process.env.REDIS_PASSWORD,
   db: asInt(process.env.REDIS_DB, 0),
-  keyPrefix: process.env.REDIS_KEY_PREFIX || 'auth-starter:',
+  keyPrefix: process.env.REDIS_KEY_PREFIX || 'order-splitter:',
 };
 
 const logLevel = (process.env.LOG_LEVEL || 'info').toLowerCase();
@@ -76,7 +54,7 @@ const allowedLevels = new Set(['error', 'warn', 'info', 'http', 'verbose', 'debu
 
 export const logConfig = {
   level: allowedLevels.has(logLevel) ? logLevel : 'info',
-  serviceName: process.env.SERVICE_NAME || 'auth-starter',
+  serviceName: process.env.SERVICE_NAME || 'order-splitter',
   logDir: process.env.LOG_DIR || './logs',
   prettyConsole: asBool(process.env.LOG_PRETTY_CONSOLE, env === 'development'),
   httpLogBody: asBool(process.env.LOG_HTTP_BODY, true),
