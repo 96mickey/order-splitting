@@ -6,10 +6,11 @@ import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-sp
 const MAX_KEY_LEN = 256;
 
 /**
- * Requires a non-empty `Idempotency-Key` header (Stripe-style) for split orders.
+ * Requires a non-empty idempotency header for split orders: `Idempotency-Key` (canonical) or
+ * `X-Idempotency-Key` (alias). Stripe-style trimming and length limits apply.
  */
 export function requireIdempotencyKey(req: Request, _res: Response, next: NextFunction): void {
-  const raw = req.get('idempotency-key');
+  const raw = req.get('idempotency-key') ?? req.get('x-idempotency-key');
   if (raw === undefined) {
     next(
       new APIError({

@@ -5,6 +5,7 @@ import app from '../../config/express';
 import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-splitter-error-codes';
 import * as split from '../../order-splitter/split';
 import { orderStore, resetOrderSplitterStoresForTests } from '../../order-splitter/stores';
+import { stripPostMeta } from '../helpers/split-order-http';
 
 function validSplitBody() {
   return {
@@ -57,7 +58,7 @@ describe.sequential('orders idempotency + GET', () => {
     expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.IDEMPOTENCY_KEY_REQUIRED);
   });
 
-  it('same Idempotency-Key and body replays 200 with same orderId', async () => {
+  it('201 then 200 replay with same orderId and meta.idempotencyHit', async () => {
     const key = randomUUID();
     const body = {
       totalAmount: 100,
@@ -65,14 +66,18 @@ describe.sequential('orders idempotency + GET', () => {
       stocks: [{ weight: 100, price: 10 }],
     };
     const first = await request(app).post('/orders/split').set('Idempotency-Key', key).send(body);
-    expect(first.status).toBe(200);
+    expect(first.status).toBe(201);
+    expect(first.body.meta).toEqual({ idempotencyHit: false });
     expect(first.body.orderId).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
     );
 
     const second = await request(app).post('/orders/split').set('Idempotency-Key', key).send(body);
     expect(second.status).toBe(200);
-    expect(second.body).toEqual(first.body);
+    expect(second.body.meta).toEqual({ idempotencyHit: true });
+    expect(stripPostMeta(second.body as Record<string, unknown>)).toEqual(
+      stripPostMeta(first.body as Record<string, unknown>),
+    );
   });
 
   it('replays with same fingerprint when stock rows are reordered in JSON', async () => {
@@ -90,10 +95,13 @@ describe.sequential('orders idempotency + GET', () => {
       stocks: [a.stocks[1], a.stocks[0]],
     };
     const first = await request(app).post('/orders/split').set('Idempotency-Key', key).send(a);
-    expect(first.status).toBe(200);
+    expect(first.status).toBe(201);
     const second = await request(app).post('/orders/split').set('Idempotency-Key', key).send(b);
     expect(second.status).toBe(200);
-    expect(second.body).toEqual(first.body);
+    expect(second.body.meta).toEqual({ idempotencyHit: true });
+    expect(stripPostMeta(second.body as Record<string, unknown>)).toEqual(
+      stripPostMeta(first.body as Record<string, unknown>),
+    );
   });
 
   it('same Idempotency-Key with different body returns 409 IDEMPOTENCY_CONFLICT', async () => {
@@ -105,7 +113,7 @@ describe.sequential('orders idempotency + GET', () => {
     };
     const b = { ...a, totalAmount: 200 };
     const first = await request(app).post('/orders/split').set('Idempotency-Key', key).send(a);
-    expect(first.status).toBe(200);
+    expect(first.status).toBe(201);
 
     const second = await request(app).post('/orders/split').set('Idempotency-Key', key).send(b);
     expect(second.status).toBe(409);
@@ -123,7 +131,7 @@ describe.sequential('orders idempotency + GET', () => {
     const fast = request(app).post('/orders/split').set('Idempotency-Key', key).send(body);
     const [slowRes, fastRes] = await Promise.all([slow, fast]);
     const statuses = [slowRes.status, fastRes.status].sort();
-    expect(statuses).toEqual([200, 409]);
+    expect(statuses).toEqual([201, 409]);
     const conflict = slowRes.status === 409 ? slowRes : fastRes;
     expect(conflict.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.IDEMPOTENCY_IN_PROGRESS);
   });
@@ -137,7 +145,7 @@ describe.sequential('orders idempotency + GET', () => {
       .set('Idempotency-Key', key)
       .set('x-test-stall-ms', '2000')
       .send(validSplitBody());
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(Date.now() - start).toBeLessThan(1500);
   });
 
@@ -149,7 +157,7 @@ describe.sequential('orders idempotency + GET', () => {
       .set('Idempotency-Key', key)
       .set('x-test-stall-ms', 'not-a-number')
       .send(validSplitBody());
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(201);
     expect(Date.now() - start).toBeLessThan(500);
 
     const key2 = randomUUID();
@@ -158,7 +166,7 @@ describe.sequential('orders idempotency + GET', () => {
       .set('Idempotency-Key', key2)
       .set('x-test-stall-ms', '0')
       .send(validSplitBody());
-    expect(res2.status).toBe(200);
+    expect(res2.status).toBe(201);
 
     const key3 = randomUUID();
     const res3 = await request(app)
@@ -166,7 +174,7 @@ describe.sequential('orders idempotency + GET', () => {
       .set('Idempotency-Key', key3)
       .set('x-test-stall-ms', '6000')
       .send(validSplitBody());
-    expect(res3.status).toBe(200);
+    expect(res3.status).toBe(201);
   });
 
   it('returns 500 when order store refuses insert (allocation failure)', async () => {
@@ -199,12 +207,12 @@ describe.sequential('orders idempotency + GET', () => {
       stocks: [{ weight: 100, price: 5 }],
     };
     const postRes = await request(app).post('/orders/split').set('Idempotency-Key', key).send(body);
-    expect(postRes.status).toBe(200);
+    expect(postRes.status).toBe(201);
     const { orderId } = postRes.body;
 
     const getRes = await request(app).get(`/orders/${orderId}`);
     expect(getRes.status).toBe(200);
-    expect(getRes.body).toEqual(postRes.body);
+    expect(getRes.body).toEqual(stripPostMeta(postRes.body as Record<string, unknown>));
   });
 
   it('GET /orders/:orderId returns 404 ORDER_NOT_FOUND for unknown id', async () => {
@@ -225,7 +233,17 @@ describe.sequential('orders idempotency + GET', () => {
     expect(conflict.status).toBe(409);
 
     const ok = await request(app).post('/orders/split').set('Idempotency-Key', randomUUID()).send(a);
-    expect(ok.status).toBe(200);
+    expect(ok.status).toBe(201);
     expect(ok.body.orderId).toBeDefined();
+  });
+
+  it('accepts X-Idempotency-Key for a successful split', async () => {
+    const res = await request(app)
+      .post('/orders/split')
+      .set('X-Idempotency-Key', randomUUID())
+      .send(validSplitBody());
+    expect(res.status).toBe(201);
+    expect(res.body.meta).toEqual({ idempotencyHit: false });
+    expect(res.body.breakdown.lines.length).toBe(2);
   });
 });

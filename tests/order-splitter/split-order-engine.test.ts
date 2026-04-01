@@ -271,8 +271,8 @@ describe.sequential('split engine HTTP + runtime precision', () => {
       .post('/orders/split')
       .set('Idempotency-Key', randomUUID())
       .send(body);
-    expect(res.status).toBe(200);
-    const qty = res.body.lines[0].quantity as number;
+    expect(res.status).toBe(201);
+    const qty = res.body.breakdown.lines[0].quantity as number;
     expect(decimalFractionalLength(qty)).toBeLessThanOrEqual(7);
     expect(qty).toBeCloseTo(0.3333333, 7);
   });

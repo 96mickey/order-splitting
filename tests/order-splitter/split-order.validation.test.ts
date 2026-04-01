@@ -217,9 +217,9 @@ describe.sequential('split order validation layer', () => {
   });
 
   describe('HTTP envelope (integration)', () => {
-    it('returns 200 and no error for a valid split payload', async () => {
+    it('returns 201 with breakdown, execution, and meta for a valid split payload', async () => {
       const res = await postSplit().send(validBody());
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(201);
       expect(res.body).toMatchObject({
         status: 'accepted',
         orderId: expect.stringMatching(
@@ -227,10 +227,17 @@ describe.sequential('split order validation layer', () => {
         ) as unknown as string,
         totalAmount: 10_000,
         orderType: 'BUY',
-        cashBalance: expect.any(Number) as number,
+        meta: { idempotencyHit: false },
+        breakdown: {
+          cashBalance: expect.any(Number) as number,
+          lines: expect.any(Array) as unknown[],
+        },
+        execution: {
+          type: expect.stringMatching(/^(IMMEDIATE|SCHEDULED)$/) as string,
+          timestamp: expect.any(String) as string,
+        },
       });
-      expect(Array.isArray(res.body.lines)).toBe(true);
-      expect(res.body.lines.length).toBe(2);
+      expect(res.body.breakdown.lines.length).toBe(2);
     });
 
     it('returns 400 + INVALID_WEIGHTS with code, message, requestId', async () => {

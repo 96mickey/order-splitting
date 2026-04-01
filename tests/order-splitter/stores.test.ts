@@ -13,8 +13,8 @@ const sampleResponse = (id: string): Record<string, unknown> => ({
   orderId: id,
   totalAmount: 1,
   orderType: 'BUY',
-  lines: [],
-  cashBalance: 0,
+  breakdown: { lines: [], cashBalance: 0 },
+  execution: { type: 'IMMEDIATE', timestamp: '2025-01-15T14:30:00.000-05:00' },
 });
 
 describe('OrderStore', () => {

@@ -5,6 +5,7 @@ import { executeSplitOrder } from '../services/split-order.service';
 import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-splitter-error-codes';
 import { getConfigSnapshot } from '../../order-splitter/runtime-config';
 import { orderStore } from '../../order-splitter/stores';
+import type { SplitOrderPostResponse } from '../../order-splitter/types/split-order-response';
 
 /** Exhaustive-switch guard; should never run at runtime. */
 function assertNever(value: never): never {
@@ -37,10 +38,22 @@ export async function postSplitOrder(req: Request, res: Response, next: NextFunc
     });
 
     switch (result.type) {
-      case 'replay':
-      case 'success':
-        res.status(httpStatus.OK).json(result.payload);
+      case 'success': {
+        const body: SplitOrderPostResponse = {
+          ...result.payload,
+          meta: { idempotencyHit: false },
+        };
+        res.status(httpStatus.CREATED).json(body);
         return;
+      }
+      case 'replay': {
+        const body: SplitOrderPostResponse = {
+          ...result.payload,
+          meta: { idempotencyHit: true },
+        };
+        res.status(httpStatus.OK).json(body);
+        return;
+      }
       case 'in_progress':
         next(
           new APIError({

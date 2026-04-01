@@ -29,10 +29,21 @@ describe('executeSplitOrder', () => {
       maxDecimalPlaces: 3,
     });
     expect(first.type).toBe('success');
-    const body = first.type === 'success' ? first.payload : {};
+    if (first.type !== 'success') {
+      return;
+    }
+    const { payload: body } = first;
     expect(body).toMatchObject({
       status: 'accepted',
       totalAmount: 100,
+      breakdown: {
+        lines: expect.any(Array) as unknown[],
+        cashBalance: expect.any(Number) as number,
+      },
+      execution: {
+        type: expect.stringMatching(/^(IMMEDIATE|SCHEDULED)$/) as string,
+        timestamp: expect.any(String) as string,
+      },
     });
     expect(String(body.orderId)).toMatch(/^[0-9a-f-]{36}$/i);
 
