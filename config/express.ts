@@ -21,9 +21,10 @@ app.use(requestContext);
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(httpRequestLogger);
-app.use(compress());
+// Skip compressing tiny JSON responses (threshold in bytes) — often faster than gzip overhead.
+app.use(compress({ threshold: 1024 }));
 app.use(methodOverride());
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
 if (corsConfig.enabled) {
   app.use(cors({ origin: corsConfig.origin, credentials: corsConfig.credentials }));
 }

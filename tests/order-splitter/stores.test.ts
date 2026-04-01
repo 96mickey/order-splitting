@@ -131,6 +131,20 @@ describe('IdempotencyStore', () => {
     vi.useRealTimers();
   });
 
+  it('periodic purge removes expired completes when purgeEveryNBegins is 1', () => {
+    vi.useFakeTimers();
+    const store = new IdempotencyStore({ completeTtlMs: 1000, purgeEveryNBegins: 1 });
+    expect(store.begin('a', 'f1').status).toBe('acquired');
+    store.complete('a', { v: 1 });
+    expect(store.begin('b', 'f2').status).toBe('acquired');
+    store.complete('b', { v: 2 });
+    vi.advanceTimersByTime(1001);
+    expect(store.begin('c', 'f3').status).toBe('acquired');
+    expect(store.begin('a', 'f1').status).toBe('acquired');
+    expect(store.begin('b', 'f2').status).toBe('acquired');
+    vi.useRealTimers();
+  });
+
   it('re-acquires after complete entry TTL expires (delete + recursive begin)', () => {
     vi.useFakeTimers();
     const store = new IdempotencyStore({ completeTtlMs: 50, maxCompleteEntries: 100 });
