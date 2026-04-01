@@ -73,6 +73,20 @@ describe('flooredQuantity', () => {
 });
 
 describe('splitOrder', () => {
+  it('execution_plan.pdf §3: $100 into price=$150 (single line) → qty=0.666, not 0.667 (splitOrder)', () => {
+    const order: OrderRequest = {
+      totalAmount: 100,
+      orderType: 'BUY',
+      stocks: [{ symbol: 'X', weight: 100, price: 150 }],
+    };
+    const { lines, cashBalance } = splitOrder(order, 3);
+    expect(lines).toHaveLength(1);
+    expect(lines[0].quantity).toBe(0.666);
+    expect(lines[0].allocatedAmount).toBe(100);
+    expect(lines[0].actualCost).toBeCloseTo(99.9, 5);
+    expect(cashBalance).toBeCloseTo(0.1, 5);
+  });
+
   it('acceptance: $100 60/40 default prices → AAPL 0.600, TSLA 0.400, cashBalance 0', () => {
     const order: OrderRequest = {
       totalAmount: 100,
@@ -87,6 +101,7 @@ describe('splitOrder', () => {
     expect(lines[0]).toMatchObject({
       symbol: 'AAPL',
       weight: 60,
+      allocatedAmount: 60,
       price: DEFAULT_PRICE,
       priceSource: 'DEFAULT',
       quantity: 0.6,
@@ -95,6 +110,7 @@ describe('splitOrder', () => {
     expect(lines[1]).toMatchObject({
       symbol: 'TSLA',
       weight: 40,
+      allocatedAmount: 40,
       price: DEFAULT_PRICE,
       priceSource: 'DEFAULT',
       quantity: 0.4,

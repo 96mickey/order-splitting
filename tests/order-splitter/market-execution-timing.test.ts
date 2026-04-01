@@ -93,7 +93,21 @@ describe('getMarketExecutionTiming (acceptance)', () => {
     expect(DateTime.fromISO(r.timestamp).toMillis()).toBe(expected.toMillis());
   });
 
-  it('Saturday any time → SCHEDULED Monday 09:30 ET', () => {
+  it('execution_plan.pdf §3: Saturday 12:00 ET → SCHEDULED Monday 09:30 ET', () => {
+    const ny = DateTime.fromObject(
+      { year: 2025, month: 1, day: 18, hour: 12, minute: 0, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const expected = DateTime.fromObject(
+      { year: 2025, month: 1, day: 20, hour: 9, minute: 30, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const r = getMarketExecutionTiming(nyToUtcInstant(ny));
+    expect(r.type).toBe('SCHEDULED');
+    expect(DateTime.fromISO(r.timestamp).toMillis()).toBe(expected.toMillis());
+  });
+
+  it('Saturday (other wall time) → SCHEDULED Monday 09:30 ET', () => {
     const ny = DateTime.fromObject(
       { year: 2025, month: 1, day: 18, hour: 14, minute: 22, second: 0 },
       { zone: 'America/New_York' },
@@ -107,7 +121,21 @@ describe('getMarketExecutionTiming (acceptance)', () => {
     expect(DateTime.fromISO(r.timestamp).toMillis()).toBe(expected.toMillis());
   });
 
-  it('Sunday any time → SCHEDULED Monday 09:30 ET', () => {
+  it('execution_plan.pdf §3: Sunday 08:00 ET → SCHEDULED Monday 09:30 ET', () => {
+    const ny = DateTime.fromObject(
+      { year: 2025, month: 1, day: 19, hour: 8, minute: 0, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const expected = DateTime.fromObject(
+      { year: 2025, month: 1, day: 20, hour: 9, minute: 30, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const r = getMarketExecutionTiming(nyToUtcInstant(ny));
+    expect(r.type).toBe('SCHEDULED');
+    expect(DateTime.fromISO(r.timestamp).toMillis()).toBe(expected.toMillis());
+  });
+
+  it('Sunday (other wall time) → SCHEDULED Monday 09:30 ET', () => {
     const ny = DateTime.fromObject(
       { year: 2025, month: 1, day: 19, hour: 3, minute: 0, second: 0 },
       { zone: 'America/New_York' },
