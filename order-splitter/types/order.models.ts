@@ -31,8 +31,8 @@ export interface OrderRequest {
 }
 
 /**
- * Successful split outcome from `POST /orders/split` (engine + metadata).
- * Prefer importing `SplitLineBreakdown` / `SplitOrderEngineResult` from `order-splitter/split` for engine fields.
+ * Minimal success marker (legacy). Full stored/HTTP shapes: {@link SplitOrderStoredResponse},
+ * {@link SplitOrderPostResponse} in `./split-order-response`.
  */
 export interface OrderResponse {
   status: 'accepted';
