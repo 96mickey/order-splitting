@@ -27,6 +27,7 @@
     "http-status": "^1.7.4",
     "ioredis": "^5.10.1",
     "joi": "^17.13.1",
+    "luxon": "^3.7.2",
     "method-override": "^3.0.0",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^4.7.1"
@@ -36,6 +37,7 @@
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/luxon": "^3.7.1",
     "@types/method-override": "^0.0.35",
     "@types/node": "^22.10.2",
     "@types/supertest": "^6.0.2",
