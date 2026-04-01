@@ -13,3 +13,5 @@ Core **business logic** for splitting orders: validation, pricing resolution, ex
 | Errors | `errors/` |
 
 HTTP wiring lives under **`api/`** (routes → controllers → services). End-to-end behaviour is covered in **`tests/order-splitter/`**. For how to call the API, see the root **[`README.md`](../README.md)** and **[`postman/README.md`](../postman/README.md)**.
+
+For requirement wording on **flexible portfolios** and **BUY/SELL**, see **[`docs/flexible-portfolios-buy-sell.md`](../docs/flexible-portfolios-buy-sell.md)**.
