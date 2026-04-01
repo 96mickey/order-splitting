@@ -50,9 +50,13 @@ export async function executeSplitOrder(input: ExecuteSplitOrderInput): Promise<
   }
 
   try {
-    await new Promise<void>((resolve) => {
-      setImmediate(resolve);
-    });
+    // Yield so a concurrent same-key request can observe `in_progress` (tests / dev). Skipped in
+    // production to avoid an extra event-loop turn on the hot path.
+    if (process.env.NODE_ENV !== 'production') {
+      await new Promise<void>((resolve) => {
+        setImmediate(resolve);
+      });
+    }
 
     let stall = 0;
     if (

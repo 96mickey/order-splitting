@@ -25,8 +25,12 @@ function canonicalStock(s: Stock): Record<string, unknown> {
  */
 export function fingerprintOrderRequest(order: OrderRequest): string {
   const stocks = [...order.stocks]
-    .map(canonicalStock)
-    .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
+    .map((s) => {
+      const canon = canonicalStock(s);
+      return { canon, key: JSON.stringify(canon) };
+    })
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map((x) => x.canon);
 
   const payloadFields: Record<string, unknown> = {
     orderType: order.orderType,
