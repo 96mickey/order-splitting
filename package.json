@@ -1,7 +1,7 @@
 {
   "name": "order-splitter",
   "version": "1.0.0",
-  "description": "TypeScript Express skeleton for Order Splitter POC (in-memory API — auth/DB stripped for now)",
+  "description": "Order Splitter API — TypeScript Express service with in-memory orders, idempotency, and split engine",
   "private": true,
   "main": "dist/index.js",
   "engines": {
