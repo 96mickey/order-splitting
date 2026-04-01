@@ -48,6 +48,97 @@ describe.sequential('split order validation layer', () => {
       if (result.ok) {
         expect(result.value.stocks).toHaveLength(2);
         expect(result.value.orderType).toBe('BUY');
+        expect(result.value.portfolioId).toBeUndefined();
+      }
+    });
+
+    it('accepts optional portfolioId and trims it', () => {
+      const result = validateSplitOrderPayload({
+        ...validBody(),
+        portfolioId: '  my-pf  ',
+      });
+      expect(result.ok).toBe(true);
+      if (result.ok) {
+        expect(result.value.portfolioId).toBe('my-pf');
+      }
+    });
+
+    it('MALFORMED_REQUEST for invalid portfolioId', () => {
+      expect(validateSplitOrderPayload({ ...validBody(), portfolioId: null }).ok).toBe(false);
+      expect(validateSplitOrderPayload({ ...validBody(), portfolioId: '' }).ok).toBe(false);
+      expect(validateSplitOrderPayload({ ...validBody(), portfolioId: '   ' }).ok).toBe(false);
+      expect(validateSplitOrderPayload({ ...validBody(), portfolioId: 1 }).ok).toBe(false);
+      const long = validateSplitOrderPayload({ ...validBody(), portfolioId: 'x'.repeat(257) });
+      expect(long.ok).toBe(false);
+    });
+
+    it('MALFORMED_REQUEST when totalAmount is NaN', () => {
+      const result = validateSplitOrderPayload({ ...validBody(), totalAmount: Number.NaN });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST);
+      }
+    });
+
+    it('MALFORMED_REQUEST when stock symbol is not a string', () => {
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks: [{ weight: 100, symbol: 999 }],
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST);
+      }
+    });
+
+    it('INVALID_PRICE when stock price is NaN when provided', () => {
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks: [{ weight: 100, price: Number.NaN }],
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_PRICE);
+      }
+    });
+
+    it('INVALID_PRECISION when stock price exceeds maxDecimalPlaces', () => {
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks: [{ weight: 100, price: 1.2345 }],
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_PRECISION);
+      }
+    });
+
+    it('MALFORMED_REQUEST when stock row omits weight', () => {
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks: [{ price: 10 }],
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST);
+        expect(result.error.message).toMatch(/weight is required/);
+      }
+    });
+
+    it('MALFORMED_REQUEST when stock weight is NaN', () => {
+      const result = validateSplitOrderPayload({
+        totalAmount: 1,
+        orderType: 'BUY',
+        stocks: [{ weight: Number.NaN }],
+      });
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST);
+        expect(result.error.message).toMatch(/weight must be a number/);
       }
     });
 

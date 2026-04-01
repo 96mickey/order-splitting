@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   computeNextMarketOpen,
   getMarketExecutionTiming,
@@ -139,7 +139,39 @@ describe('getMarketExecutionTiming (edge / destructive)', () => {
 
   it('throws on invalid DateTime', () => {
     const bad = DateTime.fromISO('not-a-date');
-    expect(() => getMarketExecutionTiming(bad)).toThrow(RangeError);
+    expect(() => getMarketExecutionTiming(bad)).toThrow(/Invalid DateTime:/);
+  });
+
+  it('throws when ny.toISO returns null in IMMEDIATE path', () => {
+    const ny = DateTime.fromObject(
+      { year: 2025, month: 1, day: 15, hour: 11, minute: 0, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const utcInput = nyToUtcInstant(ny);
+    const spy = vi.spyOn(DateTime.prototype, 'toISO').mockReturnValue(null);
+    try {
+      expect(() => getMarketExecutionTiming(utcInput)).toThrow(/Could not serialize timestamp/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('throws when nextOpen.toISO returns null in SCHEDULED path', () => {
+    const ny = DateTime.fromObject(
+      { year: 2025, month: 1, day: 18, hour: 12, minute: 0, second: 0 },
+      { zone: 'America/New_York' },
+    );
+    const utcInput = nyToUtcInstant(ny);
+    const spy = vi.spyOn(DateTime.prototype, 'toISO').mockReturnValue(null);
+    try {
+      expect(() => getMarketExecutionTiming(utcInput)).toThrow(/Could not serialize next market open/);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('accepts non-UTC input by normalizing to UTC internally', () => {
