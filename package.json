@@ -14,7 +14,8 @@
     "lint": "eslint . --ext .ts",
     "test": "vitest run --coverage",
     "test:coverage": "vitest run --coverage",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "profile:split": "tsx scripts/profile-split-latency.ts"
   },
   "dependencies": {
     "body-parser": "^1.20.3",

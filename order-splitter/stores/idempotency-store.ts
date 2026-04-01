@@ -12,6 +12,8 @@
 const DEFAULT_MAX_COMPLETE_ENTRIES = 1000;
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_STALE_EXECUTING_MS = 3 * 60 * 1000;
+/** Run full expired-complete purge every N `begin` calls (amortized vs every request). */
+const DEFAULT_PURGE_EVERY_N_BEGINS = 32;
 
 type ExecutingEntry = {
   kind: 'executing';
@@ -38,6 +40,8 @@ export type IdempotencyStoreOptions = {
   maxCompleteEntries?: number;
   completeTtlMs?: number;
   staleExecutingMs?: number;
+  /** Defaults to 32. Set to 1 to purge on every begin (legacy behavior). */
+  purgeEveryNBegins?: number;
 };
 
 export class IdempotencyStore {
@@ -47,13 +51,18 @@ export class IdempotencyStore {
 
   private readonly staleExecutingMs: number;
 
+  private readonly purgeEveryNBegins: number;
+
   /** Insertion order = LRU for complete entries; executing entries may appear anywhere. */
   private readonly cache = new Map<string, CacheEntry>();
+
+  private beginsSincePurge = 0;
 
   constructor(options: IdempotencyStoreOptions = {}) {
     this.maxCompleteEntries = options.maxCompleteEntries ?? DEFAULT_MAX_COMPLETE_ENTRIES;
     this.completeTtlMs = options.completeTtlMs ?? TWENTY_FOUR_HOURS_MS;
     this.staleExecutingMs = options.staleExecutingMs ?? DEFAULT_STALE_EXECUTING_MS;
+    this.purgeEveryNBegins = options.purgeEveryNBegins ?? DEFAULT_PURGE_EVERY_N_BEGINS;
   }
 
   private countComplete(): number {
@@ -85,7 +94,11 @@ export class IdempotencyStore {
 
   begin(key: string, fingerprint: string): IdempotencyBeginResult {
     const now = Date.now();
-    this.purgeExpiredComplete(now);
+    this.beginsSincePurge += 1;
+    if (this.beginsSincePurge >= this.purgeEveryNBegins) {
+      this.beginsSincePurge = 0;
+      this.purgeExpiredComplete(now);
+    }
 
     const existing = this.cache.get(key);
 
@@ -142,6 +155,7 @@ export class IdempotencyStore {
   /** @internal Vitest isolation */
   clearForTests(): void {
     this.cache.clear();
+    this.beginsSincePurge = 0;
   }
 }
 

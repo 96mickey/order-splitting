@@ -198,4 +198,22 @@ describe('executeSplitOrder', () => {
     expect(longStallCalls).toHaveLength(0);
     spy.mockRestore();
   });
+
+  it('production: parallel same-key without setImmediate completes as success + replay', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    const order = sampleOrder();
+    const p1 = executeSplitOrder({
+      idempotencyKey: 'prod-overlap',
+      order,
+      maxDecimalPlaces: 3,
+    });
+    const p2 = executeSplitOrder({
+      idempotencyKey: 'prod-overlap',
+      order,
+      maxDecimalPlaces: 3,
+    });
+    const [a, b] = await Promise.all([p1, p2]);
+    const kinds = [a.type, b.type].sort();
+    expect(kinds).toEqual(['replay', 'success']);
+  });
 });
