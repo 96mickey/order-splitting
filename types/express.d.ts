@@ -9,6 +9,8 @@ declare module 'express-serve-static-core' {
     log: Logger;
     /** Set by `validateSplitOrderBody` after successful validation */
     validatedSplitOrder?: OrderRequest;
+    /** Set by `requireIdempotencyKey` on `POST /orders/split` */
+    idempotencyKey?: string;
   }
 }
 
