@@ -18,26 +18,23 @@ function httpStatusLabel(status: number): string {
   return typeof value === 'string' ? value : DEFAULT_ERROR_MESSAGE;
 }
 
-const logError = (err: ErrorWithStatus, req: Request): void => {
+/** Server errors only: access middleware already logs one bracket line per request. */
+function logServerError(err: ErrorWithStatus, req: Request, status: number): void {
+  if (status < 500) return;
   const log = getRequestLogger(req);
-  const payload = {
+  log.error({
     message: 'request_error' as const,
     errMessage: err.message,
-    status: err.status,
+    status,
     url: req.originalUrl,
     method: req.method,
-    ...(IS_DEVELOPMENT || !err.status || err.status >= 500 ? { stack: err.stack } : {}),
-  };
-  if (!err.status || err.status >= 500) {
-    log.error(payload);
-    return;
-  }
-  log.warn(payload);
-};
+    stack: err.stack,
+  });
+}
 
 export const handler = (err: ErrorWithStatus, req: Request, res: Response, _next: NextFunction): void => {
   const status = Number.parseInt(String(err.status || DEFAULT_ERROR_STATUS), 10) || DEFAULT_ERROR_STATUS;
-  logError(err, req);
+  logServerError(err, req, status);
 
   if (err instanceof APIError && err.machineCode) {
     const body: ArchitectureErrorEnvelope = {
@@ -54,6 +51,7 @@ export const handler = (err: ErrorWithStatus, req: Request, res: Response, _next
   const response: JsonErrorBody = {
     code: status,
     message: err.message || httpStatusLabel(status) || DEFAULT_ERROR_MESSAGE,
+    requestId: req.requestId,
   };
   if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
     response.errors = err.errors;

@@ -21,6 +21,7 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export interface JsonErrorBody {
   code: number;
   message: string;
+  requestId: string;
   errors?: string[];
   stack?: string;
 }
