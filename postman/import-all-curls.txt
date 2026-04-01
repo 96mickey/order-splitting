@@ -1,0 +1,9 @@
+curl -sS http://127.0.0.1:3010/healthz
+curl -sS http://127.0.0.1:3010/readyz
+curl -sS http://127.0.0.1:3010/config
+curl -sS http://127.0.0.1:3010/api/v1/example/ping
+curl -sS -X POST http://127.0.0.1:3010/orders/split -H 'Content-Type: application/json' -H 'Idempotency-Key: 00000000-0000-4000-8000-000000000001' -d '{"totalAmount":100,"orderType":"BUY","stocks":[{"symbol":"AAPL","weight":60},{"symbol":"TSLA","weight":40}]}'
+curl -sS -X POST http://127.0.0.1:3010/orders/split -H 'Content-Type: application/json' -H 'Idempotency-Key: 00000000-0000-4000-8000-000000000001' -d '{"totalAmount":100,"orderType":"BUY","stocks":[{"symbol":"AAPL","weight":60},{"symbol":"TSLA","weight":40}]}'
+curl -sS http://127.0.0.1:3010/orders
+curl -sS http://127.0.0.1:3010/orders/00000000-0000-4000-8000-000000000099
+curl -sS -X PATCH http://127.0.0.1:3010/config -H 'Content-Type: application/json' -d '{"maxDecimalPlaces":7}'

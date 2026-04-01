@@ -1,0 +1,107 @@
+{
+  "info": {
+    "name": "Order Splitter",
+    "description": "All public routes. Set collection variables: baseUrl, idempotencyKey. After POST split, copy orderId into orderId for GET /orders/:orderId (or use a real id from GET /orders).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:3010" },
+    { "key": "idempotencyKey", "value": "00000000-0000-4000-8000-000000000001" },
+    { "key": "orderId", "value": "00000000-0000-4000-8000-000000000099" }
+  ],
+  "item": [
+    {
+      "name": "GET /healthz",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/healthz"
+      }
+    },
+    {
+      "name": "GET /readyz",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/readyz"
+      }
+    },
+    {
+      "name": "GET /config",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/config"
+      }
+    },
+    {
+      "name": "GET /api/v1/example/ping",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/example/ping"
+      }
+    },
+    {
+      "name": "POST /orders/split (create)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"totalAmount\": 100,\n  \"orderType\": \"BUY\",\n  \"stocks\": [\n    { \"symbol\": \"AAPL\", \"weight\": 60 },\n    { \"symbol\": \"TSLA\", \"weight\": 40 }\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/orders/split"
+      }
+    },
+    {
+      "name": "POST /orders/split (idempotency replay)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Idempotency-Key", "value": "{{idempotencyKey}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"totalAmount\": 100,\n  \"orderType\": \"BUY\",\n  \"stocks\": [\n    { \"symbol\": \"AAPL\", \"weight\": 60 },\n    { \"symbol\": \"TSLA\", \"weight\": 40 }\n  ]\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/orders/split"
+      }
+    },
+    {
+      "name": "GET /orders",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/orders"
+      }
+    },
+    {
+      "name": "GET /orders/:orderId",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/orders/{{orderId}}"
+      }
+    },
+    {
+      "name": "PATCH /config",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"maxDecimalPlaces\": 7\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": "{{baseUrl}}/config"
+      }
+    }
+  ]
+}
