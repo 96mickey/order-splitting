@@ -1,4 +1,6 @@
 process.env.NODE_ENV = 'test';
+/** Fewer Winston file transports during tests — faster I/O, matches production hot path default. */
+process.env.LOG_ROTATING_FILES = 'false';
 process.env.PORT = '3010';
 process.env.TRUST_PROXY = 'false';
 process.env.CORS_ENABLED = 'true';

@@ -21,6 +21,16 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 export interface JsonErrorBody {
   code: number;
   message: string;
+  requestId: string;
   errors?: string[];
   stack?: string;
+}
+
+/** Architecture doc nested error shape when `machineCode` is set on APIError */
+export interface ArchitectureErrorEnvelope {
+  error: {
+    code: string;
+    message: string;
+    requestId: string;
+  };
 }

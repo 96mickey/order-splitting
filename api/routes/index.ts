@@ -1,4 +1,6 @@
 import express from 'express';
+import configRoutes from './config.route';
+import ordersRoutes from './orders.route';
 import routesV1 from './v1';
 import { isRedisReady } from '../../config/redis';
 import { redisConfig } from '../../config/vars';
@@ -25,6 +27,8 @@ router.get('/readyz', (_req, res) => {
   });
 });
 
+router.use(configRoutes);
+router.use(ordersRoutes);
 router.use(routesV1);
 
 export default router;

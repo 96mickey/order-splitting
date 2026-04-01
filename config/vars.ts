@@ -59,4 +59,11 @@ export const logConfig = {
   prettyConsole: asBool(process.env.LOG_PRETTY_CONSOLE, env === 'development'),
   httpLogBody: asBool(process.env.LOG_HTTP_BODY, true),
   httpLogHeaders: asBool(process.env.LOG_HTTP_HEADERS, true),
+  /** When true, HTTP access logs also attach structured fields (second Winston meta object). */
+  httpAccessVerboseJson: asBool(process.env.LOG_HTTP_ACCESS_JSON, false),
+  /**
+   * When false (default in production): Winston uses console + error log file only — no combined/http
+   * rotating files (lower latency per request). When true: also writes combined + http access files.
+   */
+  logRotatingFiles: asBool(process.env.LOG_ROTATING_FILES, env !== 'production'),
 };

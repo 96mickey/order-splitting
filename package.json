@@ -1,7 +1,7 @@
 {
   "name": "order-splitter",
   "version": "1.0.0",
-  "description": "TypeScript Express skeleton for Order Splitter POC (in-memory API — auth/DB stripped for now)",
+  "description": "Order Splitter API — TypeScript Express service with in-memory orders, idempotency, and split engine",
   "private": true,
   "main": "dist/index.js",
   "engines": {
@@ -12,8 +12,10 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "lint": "eslint . --ext .ts",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --coverage",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "profile:split": "tsx scripts/profile-split-latency.ts"
   },
   "dependencies": {
     "body-parser": "^1.20.3",
@@ -27,6 +29,7 @@
     "http-status": "^1.7.4",
     "ioredis": "^5.10.1",
     "joi": "^17.13.1",
+    "luxon": "^3.7.2",
     "method-override": "^3.0.0",
     "winston": "^3.13.0",
     "winston-daily-rotate-file": "^4.7.1"
@@ -36,11 +39,13 @@
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.19",
     "@types/express": "^4.17.21",
+    "@types/luxon": "^3.7.1",
     "@types/method-override": "^0.0.35",
     "@types/node": "^22.10.2",
     "@types/supertest": "^6.0.2",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
+    "@vitest/coverage-v8": "^4.1.2",
     "eslint": "^7.32.0",
     "eslint-config-airbnb-base": "^14.2.1",
     "eslint-plugin-import": "^2.29.1",

@@ -20,40 +20,50 @@ const jsonFormat = winston.format.combine(
   winston.format.json(),
 );
 
+function buildTransports(): winston.transport[] {
+  const list: winston.transport[] = [
+    new winston.transports.Console({
+      format: logConfig.prettyConsole ? consoleFormat : jsonFormat,
+    }),
+  ];
+
+  const rotateOpts = {
+    dirname: logConfig.logDir,
+    zippedArchive: true,
+    maxSize: '20m',
+    maxFiles: '14d',
+    format: jsonFormat,
+  };
+
+  list.push(
+    new DailyRotateFile({
+      ...rotateOpts,
+      filename: 'error-%DATE%.log',
+      level: 'error',
+    }),
+  );
+
+  if (logConfig.logRotatingFiles) {
+    list.push(
+      new DailyRotateFile({
+        ...rotateOpts,
+        filename: 'combined-%DATE%.log',
+      }),
+      new DailyRotateFile({
+        ...rotateOpts,
+        filename: 'http-%DATE%.log',
+      }),
+    );
+  }
+
+  return list;
+}
+
 export const logger = winston.createLogger({
   level: logConfig.level,
   format: jsonFormat,
   defaultMeta: { service: logConfig.serviceName },
-  transports: [
-    new winston.transports.Console({
-      format: logConfig.prettyConsole ? consoleFormat : jsonFormat,
-    }),
-    new DailyRotateFile({
-      filename: 'error-%DATE%.log',
-      dirname: logConfig.logDir,
-      level: 'error',
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d',
-      format: jsonFormat,
-    }),
-    new DailyRotateFile({
-      filename: 'combined-%DATE%.log',
-      dirname: logConfig.logDir,
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d',
-      format: jsonFormat,
-    }),
-    new DailyRotateFile({
-      filename: 'http-%DATE%.log',
-      dirname: logConfig.logDir,
-      zippedArchive: true,
-      maxSize: '20m',
-      maxFiles: '14d',
-      format: jsonFormat,
-    }),
-  ],
+  transports: buildTransports(),
 });
 
 export function createRequestLogger(requestId: string): Logger {
