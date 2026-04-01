@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import app from '../../config/express';
@@ -7,10 +8,15 @@ import {
   ORDER_SPLITTER_ERROR_CODES,
 } from '../../order-splitter/errors/order-splitter-error-codes';
 import { setMaxDecimalPlaces } from '../../order-splitter/runtime-config';
+import { resetOrderSplitterStoresForTests } from '../../order-splitter/stores';
 import { validateSplitOrderPayload } from '../../order-splitter/validation';
 import { exceedsAllowedDecimalPlaces } from '../../order-splitter/validation/decimal-precision';
 
 const DEFAULT_DECIMALS = 3;
+
+function postSplit() {
+  return request(app).post('/orders/split').set('Idempotency-Key', randomUUID());
+}
 
 /** Valid baseline body (weights sum to 100). */
 function validBody() {
@@ -27,11 +33,12 @@ function validBody() {
 describe.sequential('split order validation layer', () => {
   beforeEach(() => {
     setMaxDecimalPlaces(DEFAULT_DECIMALS);
+    resetOrderSplitterStoresForTests();
   });
 
   it('registers every order-splitter error code uniquely', () => {
-    expect(ALL_ORDER_SPLITTER_ERROR_CODES).toHaveLength(10);
-    expect(new Set(ALL_ORDER_SPLITTER_ERROR_CODES).size).toBe(10);
+    expect(ALL_ORDER_SPLITTER_ERROR_CODES).toHaveLength(13);
+    expect(new Set(ALL_ORDER_SPLITTER_ERROR_CODES).size).toBe(13);
   });
 
   describe('validateSplitOrderPayload (unit)', () => {
@@ -202,15 +209,22 @@ describe.sequential('split order validation layer', () => {
       expect(exceedsAllowedDecimalPlaces(1.2345, 3)).toBe(true);
       expect(exceedsAllowedDecimalPlaces(1.234, 3)).toBe(false);
     });
+
+    it('treats non-finite numbers as not exceeding precision', () => {
+      expect(exceedsAllowedDecimalPlaces(Number.NaN, 3)).toBe(false);
+      expect(exceedsAllowedDecimalPlaces(Number.POSITIVE_INFINITY, 3)).toBe(false);
+    });
   });
 
   describe('HTTP envelope (integration)', () => {
     it('returns 200 and no error for a valid split payload', async () => {
-      const res = await request(app).post('/orders/split').send(validBody());
+      const res = await postSplit().send(validBody());
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject({
         status: 'accepted',
-        orderId: null,
+        orderId: expect.stringMatching(
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+        ) as unknown as string,
         totalAmount: 10_000,
         orderType: 'BUY',
         cashBalance: expect.any(Number) as number,
@@ -220,9 +234,7 @@ describe.sequential('split order validation layer', () => {
     });
 
     it('returns 400 + INVALID_WEIGHTS with code, message, requestId', async () => {
-      const res = await request(app)
-        .post('/orders/split')
-        .send({ ...validBody(), stocks: [{ weight: 50 }, { weight: 40 }] });
+      const res = await postSplit().send({ ...validBody(), stocks: [{ weight: 50 }, { weight: 40 }] });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_WEIGHTS);
       expect(typeof res.body.error.message).toBe('string');
@@ -236,28 +248,26 @@ describe.sequential('split order validation layer', () => {
         ...Array.from({ length: MAX_STOCKS_PER_ORDER }, () => ({ weight: 0 })),
         { weight: 100 },
       ];
-      const res = await request(app)
-        .post('/orders/split')
-        .send({ totalAmount: 1, orderType: 'BUY', stocks });
+      const res = await postSplit().send({ totalAmount: 1, orderType: 'BUY', stocks });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.PORTFOLIO_TOO_LARGE);
       expect(res.body.error.requestId).toBeDefined();
     });
 
     it('returns 400 EMPTY_PORTFOLIO for empty stocks', async () => {
-      const res = await request(app).post('/orders/split').send({ ...validBody(), stocks: [] });
+      const res = await postSplit().send({ ...validBody(), stocks: [] });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.EMPTY_PORTFOLIO);
     });
 
     it('returns 400 INVALID_AMOUNT for non-positive totalAmount', async () => {
-      const res = await request(app).post('/orders/split').send({ ...validBody(), totalAmount: 0 });
+      const res = await postSplit().send({ ...validBody(), totalAmount: 0 });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_AMOUNT);
     });
 
     it('returns 400 INVALID_WEIGHT_VALUE for negative weight', async () => {
-      const res = await request(app).post('/orders/split').send({
+      const res = await postSplit().send({
         ...validBody(),
         stocks: [{ weight: 110 }, { weight: -10 }],
       });
@@ -266,7 +276,7 @@ describe.sequential('split order validation layer', () => {
     });
 
     it('returns 400 INVALID_PRICE for non-positive price', async () => {
-      const res = await request(app).post('/orders/split').send({
+      const res = await postSplit().send({
         ...validBody(),
         stocks: [{ weight: 50, price: -1 }, { weight: 50 }],
       });
@@ -275,19 +285,19 @@ describe.sequential('split order validation layer', () => {
     });
 
     it('returns 400 INVALID_ORDER_TYPE for unsupported orderType', async () => {
-      const res = await request(app).post('/orders/split').send({ ...validBody(), orderType: 'HOLD' });
+      const res = await postSplit().send({ ...validBody(), orderType: 'HOLD' });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_ORDER_TYPE);
     });
 
     it('returns 400 INVALID_PRECISION when totalAmount has too many decimals', async () => {
-      const res = await request(app).post('/orders/split').send({ ...validBody(), totalAmount: 1.2345 });
+      const res = await postSplit().send({ ...validBody(), totalAmount: 1.2345 });
       expect(res.status).toBe(400);
       expect(res.body.error.code).toBe(ORDER_SPLITTER_ERROR_CODES.INVALID_PRECISION);
     });
 
     it('returns 400 MALFORMED_REQUEST when a stock entry is not an object', async () => {
-      const res = await request(app).post('/orders/split').send({
+      const res = await postSplit().send({
         ...validBody(),
         stocks: [[1, 2], { weight: 100 }],
       });
@@ -298,6 +308,7 @@ describe.sequential('split order validation layer', () => {
     it('returns 400 MALFORMED_REQUEST for invalid JSON (body-parser)', async () => {
       const res = await request(app)
         .post('/orders/split')
+        .set('Idempotency-Key', randomUUID())
         .set('Content-Type', 'application/json')
         .send('{ not-json');
       expect(res.status).toBe(400);

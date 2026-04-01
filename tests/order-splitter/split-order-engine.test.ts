@@ -1,7 +1,9 @@
+import { randomUUID } from 'crypto';
 import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import app from '../../config/express';
 import { DEFAULT_PRICE, setMaxDecimalPlaces } from '../../order-splitter/runtime-config';
+import { resetOrderSplitterStoresForTests } from '../../order-splitter/stores';
 import type { OrderRequest } from '../../order-splitter/types/order.models';
 import { splitOrder, flooredQuantity } from '../../order-splitter/split';
 
@@ -246,6 +248,7 @@ describe('splitOrder', () => {
 describe.sequential('split engine HTTP + runtime precision', () => {
   beforeEach(() => {
     setMaxDecimalPlaces(DEFAULT_DECIMALS);
+    resetOrderSplitterStoresForTests();
   });
 
   afterEach(() => {
@@ -264,7 +267,10 @@ describe.sequential('split engine HTTP + runtime precision', () => {
       orderType: 'BUY' as const,
       stocks: [{ symbol: 'Q', weight: 100, price: 3 }],
     };
-    const res = await request(app).post('/orders/split').send(body);
+    const res = await request(app)
+      .post('/orders/split')
+      .set('Idempotency-Key', randomUUID())
+      .send(body);
     expect(res.status).toBe(200);
     const qty = res.body.lines[0].quantity as number;
     expect(decimalFractionalLength(qty)).toBeLessThanOrEqual(7);
