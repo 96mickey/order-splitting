@@ -28,6 +28,8 @@ export interface OrderRequest {
   totalAmount: number;
   orderType: OrderType;
   stocks: Portfolio;
+  /** Optional partner portfolio identifier; echoed in order list summaries. */
+  portfolioId?: string;
 }
 
 /**
