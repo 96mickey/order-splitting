@@ -1,15 +1,18 @@
 import { randomUUID } from 'crypto';
+import { DateTime } from 'luxon';
 import type { OrderRequest } from '../../order-splitter/types/order.models';
+import type { SplitOrderStoredResponse } from '../../order-splitter/types/split-order-response';
 import { fingerprintOrderRequest } from '../../order-splitter/idempotency';
 import { splitOrder } from '../../order-splitter/split';
 import { idempotencyStore, orderStore, type ExecutedOrderRecord } from '../../order-splitter/stores';
+import { getMarketExecutionTiming } from '../../order-splitter/timing';
 
 /**
  * Outcome of {@link executeSplitOrder} — HTTP layer maps these to status codes and JSON.
  */
 export type ExecuteSplitOrderResult =
-  | { type: 'replay'; payload: unknown }
-  | { type: 'success'; payload: Record<string, unknown> }
+  | { type: 'replay'; payload: SplitOrderStoredResponse }
+  | { type: 'success'; payload: SplitOrderStoredResponse }
   | { type: 'in_progress' }
   | { type: 'conflict' }
   | { type: 'insert_failed' };
@@ -37,7 +40,7 @@ export async function executeSplitOrder(input: ExecuteSplitOrderInput): Promise<
   const outcome = idempotencyStore.begin(idempotencyKey, fingerprint);
 
   if (outcome.status === 'replay') {
-    return { type: 'replay', payload: outcome.response };
+    return { type: 'replay', payload: outcome.response as SplitOrderStoredResponse };
   }
   if (outcome.status === 'in_progress') {
     return { type: 'in_progress' };
@@ -69,21 +72,22 @@ export async function executeSplitOrder(input: ExecuteSplitOrderInput): Promise<
     }
 
     const { lines, cashBalance } = splitOrder(order, maxDecimalPlaces);
+    const execution = getMarketExecutionTiming(DateTime.utc());
     const orderId = randomUUID();
 
-    const body = {
-      status: 'accepted' as const,
+    const stored: SplitOrderStoredResponse = {
+      status: 'accepted',
       orderId,
       totalAmount: order.totalAmount,
       orderType: order.orderType,
-      lines,
-      cashBalance,
+      breakdown: { lines, cashBalance },
+      execution,
     };
 
     const record: ExecutedOrderRecord = {
       id: orderId,
       request: order,
-      response: { ...body } as Record<string, unknown>,
+      response: { ...stored } as Record<string, unknown>,
       createdAt: new Date().toISOString(),
     };
 
@@ -92,8 +96,8 @@ export async function executeSplitOrder(input: ExecuteSplitOrderInput): Promise<
       return { type: 'insert_failed' };
     }
 
-    idempotencyStore.complete(idempotencyKey, body);
-    return { type: 'success', payload: body as Record<string, unknown> };
+    idempotencyStore.complete(idempotencyKey, stored);
+    return { type: 'success', payload: stored };
   } catch (err) {
     idempotencyStore.abort(idempotencyKey);
     throw err;

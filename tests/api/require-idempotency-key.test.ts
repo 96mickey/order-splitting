@@ -26,6 +26,18 @@ describe('requireIdempotencyKey', () => {
     expect(key).toBe('my-key-1');
   });
 
+  it('accepts X-Idempotency-Key as an alias', () => {
+    const req = {
+      get: (name: string) => (name.toLowerCase() === 'x-idempotency-key' ? 'alias-key' : undefined),
+    } as Request;
+    let nextArg: unknown;
+    requireIdempotencyKey(req, {} as Response, (err?: unknown) => {
+      nextArg = err;
+    });
+    expect(nextArg).toBeUndefined();
+    expect((req as Request & { idempotencyKey?: string }).idempotencyKey).toBe('alias-key');
+  });
+
   it('400 IDEMPOTENCY_KEY_REQUIRED when header is missing', () => {
     const { nextArg, key } = runMiddleware(undefined);
     expect(key).toBeUndefined();
