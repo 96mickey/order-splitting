@@ -59,4 +59,6 @@ export const logConfig = {
   prettyConsole: asBool(process.env.LOG_PRETTY_CONSOLE, env === 'development'),
   httpLogBody: asBool(process.env.LOG_HTTP_BODY, true),
   httpLogHeaders: asBool(process.env.LOG_HTTP_HEADERS, true),
+  /** When true, HTTP access logs also attach structured fields (second Winston meta object). */
+  httpAccessVerboseJson: asBool(process.env.LOG_HTTP_ACCESS_JSON, false),
 };
