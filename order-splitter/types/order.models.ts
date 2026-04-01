@@ -36,8 +36,8 @@ export interface OrderRequest {
  */
 export interface OrderResponse {
   status: 'accepted';
-  /** Placeholder until persistence / id generation exists. */
-  orderId: null;
+  /** Server-generated id; immutable once stored. */
+  orderId: string;
 }
 
 /**
