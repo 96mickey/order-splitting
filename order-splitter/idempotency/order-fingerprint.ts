@@ -28,11 +28,15 @@ export function fingerprintOrderRequest(order: OrderRequest): string {
     .map(canonicalStock)
     .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
-  const payload = sortObjectKeys({
+  const payloadFields: Record<string, unknown> = {
     orderType: order.orderType,
     totalAmount: order.totalAmount,
     stocks,
-  });
+  };
+  if (order.portfolioId !== undefined) {
+    payloadFields.portfolioId = order.portfolioId;
+  }
+  const payload = sortObjectKeys(payloadFields);
 
   return createHash('sha256').update(JSON.stringify(payload)).digest('hex');
 }

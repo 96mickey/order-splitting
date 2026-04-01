@@ -9,7 +9,7 @@ export default defineConfig({
     exclude: ['dist/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'text-summary'],
+      reporter: ['text', 'text-summary', 'html'],
       include: [
         'order-splitter/**/*.ts',
         'api/controllers/orders.controller.ts',

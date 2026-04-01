@@ -212,7 +212,9 @@ describe.sequential('orders idempotency + GET', () => {
 
     const getRes = await request(app).get(`/orders/${orderId}`);
     expect(getRes.status).toBe(200);
-    expect(getRes.body).toEqual(stripPostMeta(postRes.body as Record<string, unknown>));
+    const { createdAt, ...getDetail } = getRes.body as Record<string, unknown> & { createdAt: string };
+    expect(getDetail).toEqual(postRes.body);
+    expect(createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it('GET /orders/:orderId returns 404 ORDER_NOT_FOUND for unknown id', async () => {

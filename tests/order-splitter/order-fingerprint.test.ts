@@ -81,6 +81,17 @@ describe('fingerprintOrderRequest', () => {
     expect(fingerprintOrderRequest(withoutSymbol)).not.toBe(fingerprintOrderRequest(withSymbol));
   });
 
+  it('includes portfolioId in fingerprint when present', () => {
+    const base: OrderRequest = {
+      totalAmount: 1,
+      orderType: 'BUY',
+      stocks: [{ weight: 100, price: 1 }],
+    };
+    const withId = { ...base, portfolioId: 'A' };
+    expect(fingerprintOrderRequest(base)).not.toBe(fingerprintOrderRequest(withId));
+    expect(fingerprintOrderRequest(withId)).toBe(fingerprintOrderRequest({ ...base, portfolioId: 'A' }));
+  });
+
   it('produces a 64-char hex sha256 digest', () => {
     const fp = fingerprintOrderRequest({
       totalAmount: 1,

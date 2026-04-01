@@ -4,12 +4,35 @@ import APIError from '../utils/APIError';
 import { executeSplitOrder } from '../services/split-order.service';
 import { ORDER_SPLITTER_ERROR_CODES } from '../../order-splitter/errors/order-splitter-error-codes';
 import { getConfigSnapshot } from '../../order-splitter/runtime-config';
-import { orderStore } from '../../order-splitter/stores';
-import type { SplitOrderPostResponse } from '../../order-splitter/types/split-order-response';
+import { orderStore, type ExecutedOrderRecord } from '../../order-splitter/stores';
+import type {
+  OrderListResponse,
+  OrderListSummary,
+  SplitOrderDetailResponse,
+  SplitOrderPostResponse,
+  SplitOrderStoredResponse,
+} from '../../order-splitter/types/split-order-response';
 
 /** Exhaustive-switch guard; should never run at runtime. */
 function assertNever(value: never): never {
   throw new Error(`Unreachable split-order outcome: ${String(value)}`);
+}
+
+function orderListSummaryFromRecord(row: ExecutedOrderRecord): OrderListSummary {
+  const resp = row.response as Record<string, unknown>;
+  const breakdown = resp.breakdown as { cashBalance?: unknown } | undefined;
+  let cashBalance = 0;
+  if (breakdown !== undefined && typeof breakdown.cashBalance === 'number') {
+    cashBalance = breakdown.cashBalance;
+  }
+  return {
+    orderId: row.id,
+    createdAt: row.createdAt,
+    portfolioId: row.request.portfolioId ?? null,
+    orderType: row.request.orderType,
+    totalInput: row.request.totalAmount,
+    cashBalance,
+  };
 }
 
 /** Parses optional non-production stall header for idempotency overlap experiments. */
@@ -88,6 +111,13 @@ export async function postSplitOrder(req: Request, res: Response, next: NextFunc
   }
 }
 
+export function listOrders(_req: Request, res: Response): void {
+  const rows = orderStore.listAll();
+  const orders = rows.map(orderListSummaryFromRecord);
+  const body: OrderListResponse = { orders, count: orders.length };
+  res.status(httpStatus.OK).json(body);
+}
+
 export function getOrderById(req: Request, res: Response, next: NextFunction): void {
   const row = orderStore.getById(req.params.orderId);
   if (!row) {
@@ -100,5 +130,11 @@ export function getOrderById(req: Request, res: Response, next: NextFunction): v
     );
     return;
   }
-  res.status(httpStatus.OK).json(row.response);
+  const stored = row.response as unknown as SplitOrderStoredResponse;
+  const body: SplitOrderDetailResponse = {
+    ...stored,
+    meta: { idempotencyHit: false },
+    createdAt: row.createdAt,
+  };
+  res.status(httpStatus.OK).json(body);
 }

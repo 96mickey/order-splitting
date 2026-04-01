@@ -130,6 +130,17 @@ describe('IdempotencyStore', () => {
     expect(store.begin('stale', 'fp2').status).toBe('replay');
     vi.useRealTimers();
   });
+
+  it('re-acquires after complete entry TTL expires (delete + recursive begin)', () => {
+    vi.useFakeTimers();
+    const store = new IdempotencyStore({ completeTtlMs: 50, maxCompleteEntries: 100 });
+    expect(store.begin('ttl', 'fp').status).toBe('acquired');
+    store.complete('ttl', { saved: true });
+    expect(store.begin('ttl', 'fp').status).toBe('replay');
+    vi.advanceTimersByTime(51);
+    expect(store.begin('ttl', 'fp2').status).toBe('acquired');
+    vi.useRealTimers();
+  });
 });
 
 afterEach(() => {

@@ -127,7 +127,7 @@ export function validateSplitOrderPayload(body: unknown): SplitOrderValidationRe
     );
   }
 
-  const { totalAmount, orderType, stocks } = body;
+  const { totalAmount, orderType, stocks, portfolioId: rawPortfolioId } = body;
 
   if (!Array.isArray(stocks)) {
     return fail(
@@ -206,10 +206,29 @@ export function validateSplitOrderPayload(body: unknown): SplitOrderValidationRe
     );
   }
 
+  let portfolioId: string | undefined;
+  if (rawPortfolioId !== undefined) {
+    if (rawPortfolioId === null) {
+      return fail(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST, 'portfolioId must be a string when provided');
+    }
+    if (typeof rawPortfolioId !== 'string') {
+      return fail(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST, 'portfolioId must be a string');
+    }
+    const trimmed = rawPortfolioId.trim();
+    if (trimmed.length === 0) {
+      return fail(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST, 'portfolioId cannot be empty or whitespace-only');
+    }
+    if (trimmed.length > 256) {
+      return fail(ORDER_SPLITTER_ERROR_CODES.MALFORMED_REQUEST, 'portfolioId must be at most 256 characters');
+    }
+    portfolioId = trimmed;
+  }
+
   const value: OrderRequest = {
     totalAmount,
     orderType,
     stocks: portfolio,
+    ...(portfolioId !== undefined ? { portfolioId } : {}),
   };
   return { ok: true, value };
 }
