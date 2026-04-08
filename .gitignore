@@ -6,9 +6,9 @@ bower_components/
 #  Environment Variables 
 
 # Keep .env.example but ignore all actual .env files
-!.env.example
 .env
 .env.*
+!.env.example
 
 #  Logs 
 logs/
